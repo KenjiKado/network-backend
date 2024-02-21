@@ -1,30 +1,48 @@
 import { Injectable } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
-import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class EmailService {
 	private transporter;
 
-	constructor(private configService: ConfigService) {
+	constructor() {
 		this.transporter = nodemailer.createTransport({
-			host: this.configService.get<string>('SMTP_HOST'),
-			port: 587,
-			secure: false,
+			host: process.env.SMTP_HOST,
+			port: 587, // Ensure this is the correct port for your configuration
+			secure: false, // True if port is 465, false for other ports like 587
 			auth: {
-				user: this.configService.get<string>('SMTP_USER'), // Your username
-				pass: this.configService.get<string>('SMTP_PASS'), // Your password
+				user: process.env.SMTP_USER, // Your username
+				pass: process.env.SMTP_PASS, // Your password
 			},
 		});
 	}
 
 	async sendVerificationEmail(to: string, code: string) {
+		const verificationUrl = `https://yourapplication.com/verify?token=${code}`; // Replace with your actual verification URL
+
 		const message = {
 			from: '"YOU, your social network" <you_social_network@you.com>', // Sender address
 			to: to, // Recipient address
 			subject: 'Verify Your Email Address', // Subject line
-			text: `Please use the following code to complete your registration: ${code}`, // Plain text body
-			html: `<b>Please use the following code to complete your registration:</b> ${code}`, // HTML body
+			text: `Hi,
+		
+		Thank you for registering with Your Social Network. To complete your registration, please verify your email address by clicking the link below:
+		
+		${verificationUrl}
+		
+		This link will expire in 60 minutes. Verifying your email address helps us ensure the security of your account.
+		
+		If you did not request this email, please ignore it or contact support if you believe this is an error.
+		
+		Thank you,
+		The Your Social Network Team`, // Plain text body
+			html: `<p>Hi,</p>
+		<p>Thank you for registering with <b>Your Social Network</b>. To complete your registration, please verify your email address by clicking the link below:</p>
+		<p><a href="${verificationUrl}" target="_blank">Verify Email Address</a></p>
+		<p>This link will expire in 60 minutes. Verifying your email address helps us ensure the security of your account.</p>
+		<p>If you did not request this email, please ignore it or contact support if you believe this is an error.</p>
+		<p>Thank you,<br>
+		The Your Social Network Team</p>`, // HTML body
 		};
 
 		// Send the email

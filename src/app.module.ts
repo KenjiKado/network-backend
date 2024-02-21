@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
 import { EmailModule } from './email/email.module';
 import { UsersModule } from './users/users.module';
 
@@ -9,20 +10,22 @@ import { UsersModule } from './users/users.module';
 		ConfigModule.forRoot({
 			isGlobal: true,
 		}),
-		TypeOrmModule.forRootAsync({
-			imports: [ConfigModule],
-			useFactory: async (configService) => ({
-				type: configService.get('DB_TYPE'),
-				host: configService.get('DB_HOST'),
-				port: configService.get('DB_PORT'),
-				username: configService.get('DB_USERNAME'),
-				password: configService.get('DB_PASSWORD'),
-				database: configService.get('DB_DATABASE'),
-				entities: [__dirname + '/**/*.entity{.ts,.js}'],
-				synchronize: true,
-			}),
-			inject: [ConfigService],
+		JwtModule.register({
+			global: true,
+			secret: process.env.JWT_SECRET_KEY,
+			signOptions: { expiresIn: '60m' },
 		}),
+		TypeOrmModule.forRoot({
+			type: 'postgres',
+			host: process.env.DB_HOST,
+			port: +process.env.DB_PORT,
+			username: process.env.DB_USERNAME,
+			password: process.env.DB_PASSWORD,
+			database: process.env.DB_DATABASE,
+			entities: [__dirname + '/**/*.entity{.ts,.js}'],
+			synchronize: true, // Be cautious with this in a production environment
+		}),
+
 		UsersModule,
 		EmailModule,
 	],
