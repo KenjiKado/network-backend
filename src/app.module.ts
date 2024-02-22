@@ -4,6 +4,8 @@ import { ConfigModule } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { EmailModule } from './email/email.module';
 import { UsersModule } from './users/users.module';
+import { RateLimiterService } from './auth/rate-limiter/rate-limiter.service';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
 	imports: [
@@ -28,6 +30,8 @@ import { UsersModule } from './users/users.module';
 
 		UsersModule,
 		EmailModule,
+		AuthModule,
 	],
+	providers: [RateLimiterService],
 })
 export class AppModule {}

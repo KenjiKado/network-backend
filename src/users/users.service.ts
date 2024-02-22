@@ -28,7 +28,6 @@ export class UsersService {
 		email,
 		password,
 	}: CreateUserDto): Promise<CreationUserResponse> {
-		console.log(email, password);
 		try {
 			const hashedPassword = await bcrypt.hash(password, 10);
 			const newUser = this.usersRepository.create({
@@ -77,17 +76,53 @@ export class UsersService {
 			const user = await this.usersRepository.findOne({ where: { email } });
 
 			if (!user) throw new NotFoundException('User not found.');
+			if (user.isVerified)
+				return { ok: false, message: 'User is already verified.' };
 
 			user.isVerified = true;
 			await this.usersRepository.save(user);
 
 			return { ok: true, message: 'User verified successfully.' };
 		} catch (error) {
-			if (error.name === 'TokenExpiredError') {
-				return { ok: false, message: 'Verification link has expired.' };
-			} else {
-				return { ok: false, message: 'Verification failed.' };
+			switch (error.name) {
+				case 'TokenExpiredError':
+					return { ok: false, message: 'Verification link has expired.' };
+				case 'JsonWebTokenError':
+				case 'NotBeforeError':
+					return { ok: false, message: 'Invalid verification link.' };
+				default:
+					return { ok: false, message: 'Verification failed.' };
 			}
+		}
+	}
+
+	async login({ email, password }: CreateUserDto) {
+		try {
+			const user = await this.usersRepository.findOne({ where: { email } });
+
+			// If user does not exist, return an error message
+			if (!user) {
+				return { ok: false, message: 'Invalid email or password.' };
+			}
+
+			// Compare the provided password with the hashed password in the database
+			const isMatch = await bcrypt.compare(password, user.password);
+
+			// If the passwords do not match, return an error message
+			if (!isMatch) {
+				return { ok: false, message: 'Invalid password.' };
+			}
+
+			// If passwords match, generate a JWT token for the user
+			const token = this.jwtService.sign({ id: user.id, email: user.email });
+
+			// Return success response with the token
+			return { ok: true, message: 'Login successful.', token };
+		} catch (error) {
+			return {
+				ok: false,
+				message: 'An error occurred during the login process.',
+			};
 		}
 	}
 }

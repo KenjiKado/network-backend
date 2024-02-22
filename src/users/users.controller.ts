@@ -8,13 +8,13 @@ import { CreateUserDto } from './dto/create-user.dto';
 export class UsersController {
 	constructor(private usersService: UsersService) {}
 
-	@Post()
+	@Post('create')
 	async create(@Body() createUserDto: CreateUserDto) {
 		return this.usersService.create(createUserDto);
 	}
 
 	@Post('verify')
-	async verifyUser(@Body() verificationDto: VerifyUserDto): Promise<any> {
+	async verifyUser(@Body() verificationDto: VerifyUserDto) {
 		return this.usersService.verifyUser(verificationDto);
 	}
 }
